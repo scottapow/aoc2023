@@ -9,14 +9,10 @@ import (
 	"strings"
 )
 
-const redMax int8 = 12
-const greenMax int8 = 13
-const blueMax int8 = 14
-
-type Cubes struct {
-	red   int8
-	green int8
-	blue  int8
+var maxes map[string]int8 = map[string]int8{
+	"red":   12,
+	"green": 13,
+	"blue":  14,
 }
 
 func main() {
@@ -90,13 +86,7 @@ func isRoundColorValid(color string, round string) bool {
 	if len(matches) != 0 {
 		if len(matches[0]) != 0 {
 			num, _ := strconv.Atoi(matches[0][1])
-			if color == "green" && int8(num) > greenMax {
-				roundIsValid = false
-			}
-			if color == "red" && int8(num) > redMax {
-				roundIsValid = false
-			}
-			if color == "blue" && int8(num) > blueMax {
+			if int8(num) > maxes[color] {
 				roundIsValid = false
 			}
 		}
