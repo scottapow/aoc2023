@@ -104,7 +104,6 @@ func (e *engine) calculateAdjacentTotals() int {
 			if partNumberFound {
 				continue
 			}
-			// check right
 
 			// check row below
 			if !isLastRow {
@@ -119,6 +118,54 @@ func (e *engine) calculateAdjacentTotals() int {
 	}
 
 	return adjacentTotals
+}
+
+func (e *engine) calculateGearRatios() int {
+	gearRatioTotal := 0
+	for rowIndex, row := range e.symbols {
+		isFirstRow := rowIndex == 0
+		isLastRow := rowIndex == len(e.numbers)-1
+
+		for _, s := range row {
+			symbolIndexStart := s.index
+			symbolIndexEnd := int(math.Min(float64(s.index+1), float64(rowMax)))
+			var adjacentNumbers []int
+
+			// check row above
+			if !isFirstRow {
+				prevRowNumbers := e.numbers[rowIndex-1]
+				for _, n := range prevRowNumbers {
+					if n.indexStart <= symbolIndexEnd && n.indexEnd >= symbolIndexStart {
+						adjacentNumbers = append(adjacentNumbers, n.value)
+					}
+				}
+			}
+
+			rowNumbers := e.numbers[rowIndex]
+			// check left and right
+			for _, n := range rowNumbers {
+				if n.indexEnd == symbolIndexStart || n.indexStart == symbolIndexEnd {
+					adjacentNumbers = append(adjacentNumbers, n.value)
+				}
+			}
+
+			// check row below
+			if !isLastRow {
+				nextRowNumbers := e.numbers[rowIndex+1]
+				for _, n := range nextRowNumbers {
+					if n.indexStart <= symbolIndexEnd && n.indexEnd >= symbolIndexStart {
+						adjacentNumbers = append(adjacentNumbers, n.value)
+					}
+				}
+			}
+
+			if len(adjacentNumbers) == 2 {
+				gearRatioTotal += (adjacentNumbers[0] * adjacentNumbers[1])
+			}
+		}
+	}
+
+	return gearRatioTotal
 }
 
 func main() {
@@ -140,7 +187,9 @@ func main() {
 	}
 
 	adjacentTotals := e.calculateAdjacentTotals()
+	gearRatioTotals := e.calculateGearRatios()
 	fmt.Println("adjacentTotals", adjacentTotals)
+	fmt.Println("gearRatioTotals", gearRatioTotals)
 
 	file.Close()
 }
