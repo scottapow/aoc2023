@@ -3,10 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
 )
+
+const rowMax int = 140
 
 type symbol struct {
 	value string
@@ -24,7 +27,7 @@ type engine struct {
 
 func (e *engine) mapSymbols(line string) {
 	// map symbols
-	r := regexp.MustCompile(`(?m)&|%|\/|@|\+|\*|=|\$|#|-`)
+	r := regexp.MustCompile(`(?mi)[^.\d\n]+`)
 	matches := r.FindAllStringSubmatchIndex(line, -1)
 	if len(matches) != 0 {
 		var rowSymbols []symbol
@@ -41,6 +44,7 @@ func (e *engine) mapSymbols(line string) {
 		e.symbols = append(e.symbols, []symbol{})
 	}
 }
+
 func (e *engine) mapNumbers(line string) {
 	// map numbers
 	r := regexp.MustCompile(`(?s)\d+`)
@@ -63,6 +67,60 @@ func (e *engine) mapNumbers(line string) {
 	}
 }
 
+func (e *engine) calculateAdjacentTotals() int {
+	adjacentTotals := 0
+	for rowIndex, row := range e.numbers {
+		isFirstRow := rowIndex == 0
+		isLastRow := rowIndex == len(e.numbers)-1
+		for _, n := range row {
+			partNumberFound := false
+			startIndex := int(math.Max(float64(n.indexStart-1), 0))
+			endIndex := int(math.Min(float64(n.indexEnd), float64(rowMax)))
+
+			// check row above
+			if !isFirstRow {
+				prevRowSymbols := e.symbols[rowIndex-1]
+				for _, s := range prevRowSymbols {
+					if s.index >= startIndex && s.index <= endIndex {
+						adjacentTotals += n.value
+						partNumberFound = true
+						break
+					}
+				}
+				if partNumberFound {
+					continue
+				}
+			}
+
+			rowSymbols := e.symbols[rowIndex]
+			// check left and right
+			for _, s := range rowSymbols {
+				if s.index == startIndex || s.index == endIndex {
+					adjacentTotals += n.value
+					partNumberFound = true
+					break
+				}
+			}
+			if partNumberFound {
+				continue
+			}
+			// check right
+
+			// check row below
+			if !isLastRow {
+				nextRowSymbols := e.symbols[rowIndex+1]
+				for _, s := range nextRowSymbols {
+					if s.index >= startIndex && s.index <= endIndex {
+						adjacentTotals += n.value
+					}
+				}
+			}
+		}
+	}
+
+	return adjacentTotals
+}
+
 func main() {
 	file, err := os.Open("data.txt")
 	e := &engine{
@@ -81,7 +139,8 @@ func main() {
 		e.mapSymbols(line)
 	}
 
-	fmt.Print(e.numbers[0])
+	adjacentTotals := e.calculateAdjacentTotals()
+	fmt.Println("adjacentTotals", adjacentTotals)
 
 	file.Close()
 }
